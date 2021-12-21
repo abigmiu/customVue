@@ -1,3 +1,4 @@
+import mount from "./compiler/index.js";
 import initData from "./init.js";
 
 export default function Vue(options) {
@@ -7,4 +8,12 @@ export default function Vue(options) {
 Vue.prototype._init = function (options) {
   this.$options = options;
   initData(this);
+
+  if (this.$options.el) {
+    this.$mount()
+  }
 };
+
+Vue.prototype.$mount = function () {
+  mount(this)
+}

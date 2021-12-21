@@ -24,6 +24,7 @@ export default function defineReactive(target, key, value) {
 
       value = newV;
       console.log(`setter ${key} = ${value}`);
+      dep.notify()
       observe(value);
       return value;
     },
