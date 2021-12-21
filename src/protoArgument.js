@@ -18,7 +18,24 @@ methodsToPatch.forEach(method => {
     Object.defineProperty(arrayMethods, method, {
         value: function (...args) {
             const ret = arrayProto[method].apply(this, args)
+            const ob = this.__ob__
             console.log('array reactive')
+
+            let inserted
+            switch (method) {
+                case 'push':
+                    inserted = args
+                    break;
+                case 'unshift':
+                    inserted = args
+                    break
+                case 'splice':
+                    inserted = args.slice(2)
+                    if (inserted) ob.abserveArray(inserted)
+                    ob.dep.notify()
+                default:
+                    break;
+            }
             return ret
         },
         configurable: true,
@@ -27,6 +44,6 @@ methodsToPatch.forEach(method => {
     })
 })
 
-export default function protoArgument (ary) {
+export default function protoArgument(ary) {
     ary.__proto__ = arrayMethods
 }
