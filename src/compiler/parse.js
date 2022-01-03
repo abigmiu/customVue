@@ -1,57 +1,56 @@
-import { isUnaryTag } from '../util.js'
+import { isUnaryTag } from "../util.js";
 export default function parse(template) {
-  let root = null
-  let html = template
-  const stack = []
-  debugger
+  let root = null;
+  let html = template;
+  const stack = [];
 
   while (html.trim()) {
-    if (html.indexOf('<!--') === 0) {
+    if (html.indexOf("<!--") === 0) {
       // 处理注释标签
-      const endInx = html.indexOf('-->')
-      html = html.slice(endInx + 3)
-      continue
+      const endInx = html.indexOf("-->");
+      html = html.slice(endInx + 3);
+      continue;
     }
-    const startInx = html.indexOf('<')
+    const startInx = html.indexOf("<");
     if (startInx === 0) {
       // 处理html标签
-      if (html.indexOf('</') === 0) {
-        parseEnd()
+      if (html.indexOf("</") === 0) {
+        parseEnd();
       } else {
-        parseStartTag(html)
+        parseStartTag(html);
       }
     } else if (startInx > 0) {
       // <div>text</div> 结束标签的 “<”
 
       // 找到下一个标签位置
-      const nextStartInx = html.indexOf('<')
+      const nextStartInx = html.indexOf("<");
 
       if (stack.length) {
         // stack不为空， 记文本是栈顶元素的文本
-        processChars(html.slice(0, nextStartInx))
+        processChars(html.slice(0, nextStartInx));
 
-        html = html.slice(nextStartInx)
+        html = html.slice(nextStartInx);
       }
     } else {
       // 纯文本
     }
   }
 
-  return root
+  return root;
 
   function parseEnd() {
-    html = html.slice(html.indexOf('>') + 1)
+    html = html.slice(html.indexOf(">") + 1);
 
-    processElement()
+    processElement();
   }
 
   function parseAttrs(attrs) {
-    const attrMap = {}
+    const attrMap = {};
     for (const attr of attrs) {
-      const [attrName, attrValue] = attr.split('=')
-      attrMap[attrName] = attrValue
+      const [attrName, attrValue] = attr.split("=");
+      attrMap[attrName] = attrValue.replace(/"/g, "");
     }
-    return attrMap
+    return attrMap;
   }
 
   function generateAST(tagName, attrMap) {
@@ -61,34 +60,34 @@ export default function parse(template) {
       rawAttr: attrMap,
       attr: {},
       children: [],
-    }
+    };
   }
 
   function parseStartTag() {
-    const endIdx = html.indexOf('>')
-    const content = html.slice(1, endIdx)
-    html = html.slice(endIdx + 1)
-    let tagName = '',
-      attrStr = ''
-    const firstSpaceIdx = content.indexOf(' ')
+    const endIdx = html.indexOf(">");
+    const content = html.slice(1, endIdx);
+    html = html.slice(endIdx + 1);
+    let tagName = "",
+      attrStr = "";
+    const firstSpaceIdx = content.indexOf(" ");
     if (firstSpaceIdx === -1) {
       // 标签没有属性
-      tagName = content
+      tagName = content;
     } else {
-      tagName = content.slice(0, firstSpaceIdx)
-      attrStr = content.slice(firstSpaceIdx + 1)
+      tagName = content.slice(0, firstSpaceIdx);
+      attrStr = content.slice(firstSpaceIdx + 1);
     }
-    const attrs = attrStr ? attrStr.split(' ') : []
-    const attrMap = parseAttrs(attrs)
+    const attrs = attrStr ? attrStr.split(" ") : [];
+    const attrMap = parseAttrs(attrs);
 
-    const elementAst = generateAST(tagName, attrMap)
+    const elementAst = generateAST(tagName, attrMap);
     if (!root) {
-      root = elementAst
+      root = elementAst;
     }
-    stack.push(elementAst)
+    stack.push(elementAst);
 
     if (isUnaryTag(tagName)) {
-      processElement()
+      processElement();
     }
   }
 
@@ -97,87 +96,85 @@ export default function parse(template) {
    * 进一步处理元素上的各个属性， 并将处理结果放到attr属性上
    */
   function processElement() {
-    const curEle = stack.pop()
-    const { rawAttr } = curEle
-    const properArr = Object.keys(rawAttr)
+    const curEle = stack.pop();
+    const { rawAttr } = curEle;
+    const properArr = Object.keys(rawAttr);
 
-    if (properArr.includes('v-model')) {
-      processVModel(curEle)
-    } else if (properArr.find(item => item.match(/v-bind:(.*)/))) {
-      processVBind(curEle, RegExp.$1, rawAttr[`v-bind:${RegExp.$1}`])
-    } else if (properArr.find(item => item.match(/v-on:(.*)/))) {
-      processVon(curEle, RegExp.$1, rawAttr[`v-on:${RegExp.$1}`])
+    if (properArr.includes("v-model")) {
+      processVModel(curEle);
+    } else if (properArr.find((item) => item.match(/v-bind:(.*)/))) {
+      processVBind(curEle, RegExp.$1, rawAttr[`v-bind:${RegExp.$1}`]);
+    } else if (properArr.find((item) => item.match(/v-on:(.*)/))) {
+      processVon(curEle, RegExp.$1, rawAttr[`v-on:${RegExp.$1}`]);
     }
-    const stackLen = stack.length
+    const stackLen = stack.length;
     // 这里不理解
     if (stackLen) {
-      stack[stackLen - 1].children.push(curEle)
-      curEle.parent = stack[stackLen - 1]
+      stack[stackLen - 1].children.push(curEle);
+      curEle.parent = stack[stackLen - 1];
     }
   }
 
-
   function processVModel(curEle) {
-    const { tag, attr, rawAttr } = curEle
-    const { type, 'v-model': vModelValue } = rawAttr
+    const { tag, attr, rawAttr } = curEle;
+    const { type, "v-model": vModelValue } = rawAttr;
 
-    if (tag === 'input') {
+    if (tag === "input") {
       if (/text/.test(type)) {
         attr.VModel = {
           tag,
-          type: 'text',
-          value: vModelValue
-        }
+          type: "text",
+          value: vModelValue,
+        };
       } else if (/checkbox/.test(type)) {
         attr.Vmodel = {
           tag,
-          type: 'checkbox',
-          value: vModelValue
-        }
+          type: "checkbox",
+          value: vModelValue,
+        };
       }
-    } else if (tag === 'textarea') {
+    } else if (tag === "textarea") {
       attr.vModel = {
         tag,
-        value: vModelValue
-      }
-    } else if (tag === 'select') {
+        value: vModelValue,
+      };
+    } else if (tag === "select") {
       attr.vModel = {
         tag,
-        value: vModelValue
-      }
+        value: vModelValue,
+      };
     }
-
   }
 
   function processVBind(curEle, bindKey, bindValue) {
     curEle.attr.VBind = {
-      [bindKey]: bindValue
-    }
+      [bindKey]: bindValue,
+    };
   }
 
   function processVon(curEle, onKey, onValue) {
     curEle.attr.VOn = {
-      [onKey]: onValue
-    }
+      [onKey]: onValue,
+    };
   }
   /**
    * 处理文本
-   * @param {*} text 
-   * @returns 
+   * @param {*} text
+   * @returns
    */
   function processChars(text) {
-    if (!text.trim()) return
+    if (!text.trim()) return;
 
     const textAST = {
       type: 3,
       text: text,
-    }
+    };
 
     // 是表达式
     if (text.match(/{{(.*)}}/)) {
-      textAST.expression = RegExp.$1.trim()
+      textAST.expression = RegExp.$1.trim();
     }
 
-    stack[stack.length - 1].children.push(textAST)
+    stack[stack.length - 1].children.push(textAST);
   }
 }
