@@ -18,6 +18,7 @@ Vue.prototype._update = function (vnode) {
   this._vnode = vnode;
   if (!preVNode) {
     //首次渲染
+
     this.$el = this.__patch__(this.$el, vnode);
   } else {
     this.$el = this.__patch__(preVNode, vnode);

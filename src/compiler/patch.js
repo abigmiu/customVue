@@ -3,6 +3,9 @@
  * @param oldVnode
  * @param vnode
  */
+import { isReserveTag } from "../util.js";
+import Vue from "../index.js";
+
 export default function patch(oldVnode, vnode) {
   if (oldVnode && !vnode) {
     // 组件销毁
@@ -10,6 +13,7 @@ export default function patch(oldVnode, vnode) {
   }
   if (!oldVnode) {
     // 首次渲染
+    createEle(vnode);
   } else {
     if (oldVnode.nodeType) {
       // 说明是真实节点， 表示首次渲染根组件
@@ -58,7 +62,24 @@ function createEle(vnode, parent, referNode) {
   }
 }
 
-function createComponent() {}
+function createComponent(vnode) {
+  if (vnode.tag && !isReserveTag(vnode.tag)) {
+    const {
+      tag,
+      context: {
+        $options: { components },
+      },
+    } = vnode;
+
+    const compOptions = components[tag];
+
+    const compIns = new Vue(compOptions);
+    compIns.$mount();
+    debugger;
+    compIns._vnode.parent = vnode.parent;
+    vnode.parent.appendChild(compIns._vnode.elm);
+  }
+}
 
 function createTextNode(textVnode) {
   let { text } = textVnode;
@@ -78,9 +99,11 @@ function createTextNode(textVnode) {
 function setAttribute(attr, vnode) {
   for (let name in attr) {
     if (name === "vModel") {
-      // setVModel();
+      setVModel(vnode.tag, attr.vModel.value, vnode);
     } else if (name === "vBind") {
+      setVBind(vnode);
     } else if (name === "vOn") {
+      setVOn(vnode);
     } else {
       vnode.elm.setAttribute(name, attr[name]);
     }
@@ -90,15 +113,49 @@ function setAttribute(attr, vnode) {
 function setVModel(tag, value, vnode) {
   const { context: vm, elm } = vnode;
   if (tag === "select") {
-    elm.value = vm[value];
+    Promise.resolve().then(() => {
+      elm.value = vm[value];
+    });
+
     elm.addEventListener("change", function () {
       vm[value] = elm.value;
     });
   } else if (tag === "input" && vnode.elm.type === "text") {
+    elm.value = vm[value];
+    elm.addEventListener("input", function () {
+      vm[value] = elm.value;
+    });
   } else if (tag === "input" && vnode.elm.type === "checkbox") {
+    elm.checked = vm[value];
+    elm.addEventListener("change", () => {
+      vm[value] = elm.checked;
+    });
   }
 }
 
-function setVBind() {}
+function setVBind(vnode) {
+  const {
+    attr: { vBind },
+    elm,
+    context: vm,
+  } = vnode;
 
-function setVOn() {}
+  for (let attrName in vBind) {
+    elm.setAttribute(attrName, vm[vBind[attrName]]);
+    elm.removeAttribute(`v-bind:${attrName}`);
+  }
+}
+
+function setVOn(vnode) {
+  const {
+    attr: { vOn },
+    elm,
+    context: vm,
+  } = vnode;
+
+  for (let eventName in vOn) {
+    elm.addEventListener(eventName, function (...args) {
+      vm[vOn[eventName]].apply(vm, args);
+    });
+  }
+}

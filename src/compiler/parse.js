@@ -28,9 +28,8 @@ export default function parse(template) {
       if (stack.length) {
         // stack不为空， 记文本是栈顶元素的文本
         processChars(html.slice(0, nextStartInx));
-
-        html = html.slice(nextStartInx);
       }
+      html = html.slice(nextStartInx);
     } else {
       // 纯文本
     }

@@ -2,6 +2,7 @@ import proxy from "./proxy.js";
 import observe from "./observe.js";
 
 export default function initData(vm) {
+  console.log(vm);
   const { data } = vm.$options;
   let _data = (vm._data = {});
 
