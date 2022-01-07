@@ -74,6 +74,7 @@ function createComponent(vnode) {
     const compOptions = components[tag];
 
     const compIns = new Vue(compOptions);
+    compIns._parentVnode = vnode;
     compIns.$mount();
     debugger;
     compIns._vnode.parent = vnode.parent;

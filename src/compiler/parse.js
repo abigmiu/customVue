@@ -106,11 +106,36 @@ export default function parse(template) {
     } else if (properArr.find((item) => item.match(/v-on:(.*)/))) {
       processVon(curEle, RegExp.$1, rawAttr[`v-on:${RegExp.$1}`]);
     }
+
+    processSlotContent(vnode);
+
     const stackLen = stack.length;
     // 这里不理解
     if (stackLen) {
       stack[stackLen - 1].children.push(curEle);
+
       curEle.parent = stack[stackLen - 1];
+
+      if (curEle.slotName) {
+        const { parent, slotName, scopeSlot, children } = curEle;
+        const slotInfo = {
+          slotName,
+          scopeSlot,
+          children: children.map((item) => {
+            // 为了避免JSON.stringify(atrr) 出现栈溢出，因为有循环引用
+            delete item.parent;
+            return item;
+          }),
+        };
+
+        if (parent.rawAttr.scopedSlots) {
+          parent.rawAttr.scopedSlots[curEle.slotName] = slotInfo;
+        } else {
+          parent.rawAttr.scopedSlots = {
+            [curEle.slotName]: slotInfo,
+          };
+        }
+      }
     }
   }
 
@@ -175,5 +200,24 @@ export default function parse(template) {
     }
 
     stack[stack.length - 1].children.push(textAST);
+  }
+}
+
+/**
+ *
+ * @param el 节点的ast对象
+ */
+function processSlotContent(el) {
+  if (el.tag === "template") {
+    const attrMap = el.rawAttr;
+
+    for (let key in attrMap) {
+      if (key.match(/v-slot:(.*)/)) {
+        const soltName = (el.slotName = RegExp.$1);
+        el.scopeSlot = attrMap[`v-slot:${slotName}`];
+
+        return;
+      }
+    }
   }
 }

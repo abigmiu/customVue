@@ -10,6 +10,10 @@ function genElement(ast) {
 
   const attrs = { ...rawAttr, ...attr };
   const children = genChildren(ast);
+
+  if (tag === "slot") {
+    return `_t(${JSON.stringify(attrs)}, [${children}])`;
+  }
   return `_c('${tag}', ${JSON.stringify(attrs)}, [${children}])`;
 }
 
