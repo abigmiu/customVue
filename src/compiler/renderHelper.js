@@ -32,19 +32,19 @@ function createTextNode(textAst) {
 
 function renderSlot(attr, children) {
   const parentAttr = this._parentVnode.attr;
-
+  let vnode = null;
   if (parentAttr.scopedSlots) {
     const slotName = attr.name;
     const soltInfo = parentAttr.scopedSlots[slotName];
     this[slotInfo.scopeSlot] = this[Object.keys(attrs.vBind)];
     vnode = genVnode(slotInfo.children, this);
   } else {
-    vnode = genVnode(children, this)
+    vnode = genVnode(children, this);
   }
 
-  if (children.length === 1) return vnode[0]
+  if (children.length === 1) return vnode[0];
 
-  return createElement.call(this, 'div', {}, vnode)
+  return createElement.call(this, "div", {}, vnode);
 }
 
 function genVnode(childs, vm) {
@@ -68,9 +68,9 @@ function genVnode(childs, vm) {
         vnode.push(createTextNode.call(vm, text));
       }
     } else {
-      vnode.push(createElement.call(vm, tar, attr, genVnode(children, vm))))
+      vnode.push(createElement.call(vm, tar, attr, genVnode(children, vm)));
     }
   }
 
-  return vnode
+  return vnode;
 }

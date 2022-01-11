@@ -24,7 +24,10 @@ export default function patch(oldVnode, vnode) {
       // 移除老的节点
       parent.removeChild(oldVnode);
     } else {
-      console.log("update");
+      debugger;
+      console.log(oldVnode);
+      console.log(vnode);
+      patchVonde(oldVnode, vnode);
     }
   }
 }
@@ -76,7 +79,7 @@ function createComponent(vnode) {
     const compIns = new Vue(compOptions);
     compIns._parentVnode = vnode;
     compIns.$mount();
-    debugger;
+
     compIns._vnode.parent = vnode.parent;
     vnode.parent.appendChild(compIns._vnode.elm);
   }
@@ -159,4 +162,84 @@ function setVOn(vnode) {
       vm[vOn[eventName]].apply(vm, args);
     });
   }
+}
+
+function patchVonde(oldVnode, vnode) {
+  if (oldVnode === vnode) return;
+
+  vnode.elm = oldVnode.elm;
+
+  const ch = vnode.children;
+  const oldCh = oldVnode.children;
+
+  if (!vnode.text) {
+    if (ch && oldCh) {
+      updateChildren(ch, oldCh);
+    } else if (ch) {
+    } else if (oldCh) {
+    }
+  } else {
+    if (vnode.text.expression) {
+      const value = JSON.stringify(vnode.context[vnode.text.expression]);
+
+      try {
+        const oldValue = oldVnode.elm.textContent;
+
+        if (value !== oldValue) {
+          oldValue.elm.textContent = value;
+        }
+      } catch (e) {}
+    }
+  }
+}
+
+function updateChildren(ch, oldCh) {
+  let newStartIdx = 0;
+  let newEndIdx = ch.length - 1;
+
+  let oldStartIdx = 0;
+  let oldEndInx = oldCh.length - 1;
+
+  while (newStartIdx <= newEndIdx || oldStartIdx <= oldEndInx) {
+    const newStartNode = ch[newStartIdx];
+    const newEndNode = ch[newEndIdx];
+
+    const oldStartNode = oldCh[oldStartIdx];
+    const oldEndNode = oldCh[oldEndInx];
+
+    if (sameVnode(newStartNode, oldStartNode)) {
+      patchVonde(oldStartNode, newStartNode);
+      oldStartIdx++;
+      newStartIdx++;
+    } else if (sameVnode(newStartNode, oldEndNode)) {
+      patchVonde(oldEndNode, newStartNode);
+      oldEndNode.elm.parentNode.insertBefore(
+        oldEndNode.elm,
+        oldCh[newStartNode].elm
+      );
+      oldEndInx--;
+      newStartIdx++;
+    } else if (sameVnode(newEndIdx, oldStartIdx)) {
+      patchVonde(oldStartNode, newEndNode);
+      oldStartNode.elm.parentNode.insertBefore(
+        oldStartNode.elm,
+        oldCh[newEndIdx].elm.nextSibling
+      );
+      oldStartIdx++;
+      newEndIdx--;
+    } else if (sameVnode(newEndNode, oldEndNode)) {
+      patchVonde(oldEndNode, newEndNode);
+      newEndIdx--;
+      oldEndInx--;
+    } else {
+    }
+
+    if (newStartIdx < newEndIdx) {
+    } else if (oldStartIdx < oldEndInx) {
+    }
+  }
+}
+
+function sameVnode(a, b) {
+  return a.key === b.key && a.tag === b.tag;
 }

@@ -107,7 +107,7 @@ export default function parse(template) {
       processVon(curEle, RegExp.$1, rawAttr[`v-on:${RegExp.$1}`]);
     }
 
-    processSlotContent(vnode);
+    processSlotContent(curEle);
 
     const stackLen = stack.length;
     // 这里不理解
