@@ -1,5 +1,10 @@
 import Dep from "./Dep.js";
+import queueWatcher from "./asyncUpdateQueue.js";
+
+let uid = 0;
+
 export default function Watcher(cb, options = {}, vm = null) {
+  this.uid = uid++;
   this._cb = cb;
   this.options = options;
   this.vm = vm;
@@ -13,9 +18,15 @@ Watcher.prototype.get = function () {
   this.value = this._cb.apply(this.vm);
   Dep.target = null;
 };
+Watcher.prototype.run = function () {
+  this.get();
+};
 Watcher.prototype.update = function () {
-  this._cb();
-  this.dirty = true;
+  if (this.options.lazy) {
+    this.dirty = true;
+  } else {
+    queueWatcher(this);
+  }
 };
 Watcher.prototype.evaluate = function () {
   this.get();
